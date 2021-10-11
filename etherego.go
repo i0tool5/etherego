@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -112,4 +113,34 @@ func (e *ETHClient) TransferTokens(ctx context.Context,
 		return
 	}
 	return signedTx.Hash(), nil
+}
+
+// SubscribeNewBlocks subscribes to new block creation events.
+// Works only with wss:// connection scheme
+func (e *ETHClient) SubscribeNewBlocks(ctx context.Context) (
+	<-chan *types.Header, <-chan error, error) {
+
+	var (
+		headsChan = make(chan *types.Header)
+		outChan   = make(chan *types.Header)
+		errChan   = make(chan error)
+		sub, err  = e.SubscribeNewHead(ctx, headsChan)
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// event listener goroutine
+	go func(sub ethereum.Subscription, ch chan *types.Header) {
+		for {
+			select {
+			case err = <-sub.Err():
+				errChan <- err
+			case header := <-headsChan:
+				outChan <- header
+			}
+		}
+	}(sub, headsChan)
+
+	return outChan, errChan, nil
 }

@@ -3,35 +3,40 @@ package etherego_test
 import (
 	"context"
 	"log"
+	"math/big"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/i0tool5/etherego"
 )
 
 var (
 	// Accounts (got from Ganache)
 	Accounts = map[string]string{
-		"0xc91a7a9a34574607c58311B9492Efad0a8ca580D": "0xabf7e203e101698b51334bf0e031286c5372a8b2f1fcdd779cd126209a539d97",
-		"0xa1A0f120d399C83b02a7f1DD64D088A49a17d0Ef": "0x6f0297f7e236d296333a8543206bfedb779d2850da3da852d7e0a081f47bbcb0",
-		"0xe1EC783275Ca755aBCF06C08dAB3e7611B889948": "0x74bf019fe8b01ee5e7b95bec4aaf589e011bfbf5ff2115d2c3bfd29d5c3a61d2",
-		"0x3c851aE8c79e792AD202A21a5640aA10Dbe0d4c8": "0xd1cd2a01167736aa810527caf41fe297f0a93bd9754f941f3e244e8ede1344c4",
-		"0x408EBae0F603FDe53399962225c82CD57366ecd7": "0xd1658559f680c756be858025f956bdec2a4bf98b828559ba7f45f4fbd92f6929",
-		"0xe4A102Ed256973276FA89b768C3199d6383b41C9": "0x72f577d4ebae7b35086136869ba925b8f29a83d9b7e053ff9361f7dd40d6838f",
-		"0x3284B2cF004cE4De13D64f814798Bbfe18b90088": "0x6e82755a7a81189c1462d58277be44652e5f7b2f97251c505ddcc790f34e4141",
-		"0x0799018C14F63006A43DB399dcA06fD0DFc861d8": "0xf313299bca1a8ea56bfa7e970002e902313a927e82330ad7ddd3c5924268c3e6",
-		"0x97c71e285C015fE617527911b0f150865Eb4b476": "0xfad90c047bfe0e1f6439e524188d49a26f6cf4e5a51fd7ae6a1e660ca11ecd52",
-		"0xecba04Fed95F856fD557C085D340AC9Eaa79Be62": "0x2504fa6088073d44e75d791bc6e0267ed9928b3aa43f244d99110d90d1ed99e1",
+		"0x6eA84B613C5EdD129086a5AB30d02CDf635A63b6": "0xa78b21ef4f87ab590a489ae86cd27cdb5ef755a4060fa3622cc28a1f5209e693",
+		"0x6De327DAb7462ee0b898548b7ae64ca094292DC2": "0x7710a4c8b74bbe9aedd78a00d9ab11a348343668534f9d2b1b2f863c8ee395c3",
+		"0x423B541dEB63601Cc33E8b4B331263c26C3Bc9Ce": "0xd7fdc6701e2233bf9d75fcfeabc89fff31ce64c7dad115aac090d2685b29eaba",
+		"0x8F087Bfa43e78e491666c339a1c9129b03fF8446": "0x30017efa07c155f1de25954b43d265d8efd491c1200785e05c388a9d45bdcdc3",
+		"0x43a7835854B077D2647334B10550ebA38bd250B3": "0xe20375aee28830258f8f315528f12b5f8097f05977ff4e1f66b1d60adbf57849",
+		"0x0c3d6433f679d6e0DEECAaa8516D1C1e2E222a1d": "0x496c12c0d61d62e0271a327c05c8acb32c39579016ba996012b99f942e39693b",
+		"0x02D3daA6740b4bfb73b382364aE307B693B7A310": "0x8425f29a14f9b52a9a325afb232e468b4b6f11eb01f82df59d5d0b076f6d39a2",
+		"0xD73d75da6a6cAFEaa67125bdd8978FAde362A477": "0x35768fd4670f86564f9dc69c86f7782d9926cf9d05bf6831ec52398de66b26d3",
+		"0x9962aBB93e23c16Aa94bACEd0186c006DCb1333f": "0x8dbd0f4f00fe932cace5ad3ebab3fee1d89e9bd5f4950bcb80a02733d6edaf8a",
+		"0x19faD65ceFEe08d38E1B96FF2DBE28b1487b99Df": "0xd2229b917ffef431fcd1688e3d93c8acd66b397a08bad326c6ff560f57ad2646",
 	}
 )
 
-func TestAll(t *testing.T) {
+func TestDefaultConn(t *testing.T) {
 	var (
 		ctx   = context.Background()
 		accs  = etherego.Accounts(Accounts)
 		addrs = make([]string, 0)
 	)
 
+	// prepare wallets
 	for k := range Accounts {
 		addrs = append(addrs, k)
 	}
@@ -39,31 +44,24 @@ func TestAll(t *testing.T) {
 	client, err := etherego.New("http://localhost:8545", &accs)
 
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("error creating client %s", err)
 	}
 
-	// block, err := client.BlockByNumber(ctx, big.NewInt(5))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	rand.Seed(time.Now().Unix())
 
-	// amount := fromEthToWei(big.NewFloat(0.1))
-	// txHash := client.transferTokens(ctx, accounts[1], accounts[0], amount)
-
-	// trx, pending, err := client.TransactionByHash(ctx, txHash)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if pending {
-	// 	fmt.Println("Transaction is pending:", trx.Hash().Hex())
-	// }
-
-	// b, err := client.PendingBalanceAt(ctx, common.HexToAddress(accounts[0]))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("Pending balance:", b)
+	for k := 1; k < len(addrs); k++ {
+		amount, err := etherego.EthToWei(big.NewFloat(float64(rand.Intn(100)) / 100))
+		if err != nil {
+			t.Fatal(err)
+		}
+		txHash, err := client.TransferTokens(ctx, addrs[k], addrs[k-1], amount)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if txHash.Hex() == "" {
+			t.Fatal("no transaction created")
+		}
+	}
 
 	for _, a := range addrs {
 		bal, err := client.BalanceAt(ctx, common.HexToAddress(a), nil)
@@ -102,5 +100,58 @@ func TestAll(t *testing.T) {
 				block.Number(), tr.Hash().Hex(), from, tr.To(), val,
 			)
 		}
+	}
+}
+
+func TestWssConn(t *testing.T) {
+	var (
+		ctx           = context.Background()
+		accs          = etherego.Accounts(Accounts)
+		breaker       = make(chan struct{})
+		headers       = make([]*types.Header, 0)
+		infuraAddress = "wss://mainnet.infura.io/ws/v3/<project_id>" // replace <project_id> to walid project id
+	)
+
+	client, err := etherego.New(infuraAddress, &accs)
+
+	if err != nil {
+		t.Fatalf("error creating client %s", err)
+	}
+
+	hds, errs, err := client.SubscribeNewBlocks(ctx)
+	if err != nil {
+		t.Fatalf("subscribing new blocks %s", err)
+	}
+
+	go func() {
+		for {
+			select {
+			case err := <-errs:
+				t.Logf("listener has error %s", err)
+			case <-breaker:
+				return
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case h := <-hds:
+				t.Logf("got new block header")
+				headers = append(headers, h)
+			case <-breaker:
+				return
+			}
+		}
+	}()
+
+	// waiting 30 seconds for new block (15s eth)
+	<-time.After(30 * time.Second)
+	close(breaker)
+
+	t.Logf("headers: %v", headers)
+	if len(headers) == 0 {
+		t.Fatal("no new blocks received")
 	}
 }
