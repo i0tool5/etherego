@@ -3,7 +3,6 @@ package etherego
 import (
 	"context"
 	"crypto/ecdsa"
-	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -17,6 +16,9 @@ var (
 	WeiEth  = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil)
 	GweiEth = big.NewInt(0).Exp(big.NewInt(10), big.NewInt(9), nil)
 )
+
+// Default gas limit in ethereum network
+const EtherDefaultGasLimit uint64 = 21_000
 
 // Accounts it's a mapping of account address to account private key
 type Accounts map[string]string
@@ -69,34 +71,39 @@ func (e *ETHClient) BlocksRange(ctx context.Context, beg, end int) ([]*types.Blo
 
 // TransferTokens transfer tokens from one account to another, and returns transaction hash
 func (e *ETHClient) TransferTokens(ctx context.Context,
-	fromAddr, toAddr string, ethVal *big.Int) (txHash common.Hash, err error) {
+	fromAddr, toAddr string, gasLimit, ethVal *big.Int) (txHash common.Hash, err error) {
 
 	pk := (*e.Accounts)[fromAddr][2:]
 	privateKey, err := crypto.HexToECDSA(pk)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	pubKey := privateKey.Public()
 	publicKeyECDSA, ok := pubKey.(*ecdsa.PublicKey)
 	if !ok {
-		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+		err = ErrKeyNotECDSA
+		return
 	}
 
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	dstAddr := common.HexToAddress(toAddr)
+
 	nonce, err := e.PendingNonceAt(ctx, fromAddress)
 	if err != nil {
 		return
 	}
 
-	gasLimit := uint64(6721975)
 	gasPrice, err := e.SuggestGasPrice(ctx)
 	if err != nil {
 		return
 	}
 
-	dstAddr := common.HexToAddress(toAddr)
-	tx := types.NewTransaction(nonce, dstAddr, ethVal, gasLimit, gasPrice, []byte("donation"))
+	if gasLimit == nil {
+		gasLimit = big.NewInt(0).SetUint64(EtherDefaultGasLimit)
+	}
+
+	tx := types.NewTransaction(nonce, dstAddr, ethVal, gasLimit.Uint64(), gasPrice, nil) // add message
 
 	chainID, err := e.ChainID(ctx)
 	if err != nil {
@@ -116,7 +123,7 @@ func (e *ETHClient) TransferTokens(ctx context.Context,
 }
 
 // SubscribeNewBlocks subscribes to new block creation events.
-// Works only with wss:// connection scheme
+// Works only with (ws/wss):// connection scheme
 func (e *ETHClient) SubscribeNewBlocks(ctx context.Context) (
 	<-chan *types.Header, <-chan error, error) {
 
